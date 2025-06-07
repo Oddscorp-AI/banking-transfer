@@ -2,6 +2,10 @@
 
 This project provides a minimal Spring Boot service demonstrating online registration for a banking application.
 
+## Database
+
+The service now uses MySQL. Update `src/main/resources/application.properties` with your MySQL credentials or run a local instance on port `3306` with a database named `bankingdb`.
+
 ## Building
 
 ```bash
@@ -27,4 +31,3 @@ After running the application, Swagger UI is available at:
 ```
 http://localhost:8080/swagger-ui.html
 ```
-
