@@ -58,3 +58,4 @@ After running the application, Swagger UI is available at:
 ```
 http://localhost:8080/swagger-ui.html
 ```
+The documentation lists all available endpoints including `/api/accounts` for creating accounts.

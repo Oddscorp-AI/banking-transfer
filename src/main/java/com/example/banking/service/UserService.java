@@ -20,16 +20,16 @@ public class UserService {
 
     @Transactional
     public User register(RegistrationRequest request) {
-        if (userRepository.existsByEmail(request.getEmail()) || userRepository.existsByCitizenId(request.getCitizenId())) {
+        if (userRepository.existsByEmail(request.email()) || userRepository.existsByCitizenId(request.citizenId())) {
             throw new IllegalArgumentException("User already exists");
         }
         User user = new User();
-        user.setEmail(request.getEmail());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setCitizenId(request.getCitizenId());
-        user.setThaiName(request.getThaiName());
-        user.setEnglishName(request.getEnglishName());
-        user.setPin(passwordEncoder.encode(request.getPin()));
+        user.setEmail(request.email());
+        user.setPassword(passwordEncoder.encode(request.password()));
+        user.setCitizenId(request.citizenId());
+        user.setThaiName(request.thaiName());
+        user.setEnglishName(request.englishName());
+        user.setPin(passwordEncoder.encode(request.pin()));
         return userRepository.save(user);
     }
 }
