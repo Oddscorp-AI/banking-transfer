@@ -51,6 +51,19 @@ Tellers can create new accounts by sending a POST request to `/api/accounts` wit
 
 The response includes a generated `accountNumber` consisting of seven digits.
 
+## Depositing money
+
+Tellers can deposit money into an existing account by sending a POST request to
+`/api/accounts/{accountNumber}/deposit` with JSON like:
+
+```json
+{
+  "amount": 50.0
+}
+```
+
+The amount must be at least 1 THB.
+
 ## API documentation
 
 After running the application, Swagger UI is available at:

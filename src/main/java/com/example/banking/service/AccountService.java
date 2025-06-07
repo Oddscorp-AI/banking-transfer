@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.banking.dto.AccountRequest;
+import com.example.banking.dto.DepositRequest;
 import com.example.banking.model.Account;
 import com.example.banking.repository.AccountRepository;
 
@@ -30,6 +31,17 @@ public class AccountService {
         if (request.initialDeposit() != null) {
             account.setBalance(request.initialDeposit());
         }
+        return accountRepository.save(account);
+    }
+
+    @Transactional
+    public Account deposit(String accountNumber, BigDecimal amount) {
+        if (amount.compareTo(BigDecimal.ONE) < 0) {
+            throw new IllegalArgumentException("Deposit must be at least 1 THB");
+        }
+        Account account = accountRepository.findByAccountNumber(accountNumber)
+                .orElseThrow(() -> new IllegalArgumentException("Account not found"));
+        account.setBalance(account.getBalance().add(amount));
         return accountRepository.save(account);
     }
 
