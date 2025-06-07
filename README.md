@@ -162,3 +162,13 @@ After running the application, Swagger UI is available at:
 http://localhost:8080/swagger-ui.html
 ```
 The documentation lists all available endpoints including `/api/accounts` for creating accounts.
+
+## Error handling
+
+When a request fails validation or a resource cannot be found the service returns a JSON error message. For example:
+
+```json
+{"error": "Account not found"}
+```
+
+The HTTP status code matches the problem (e.g. `400 Bad Request` for invalid input or `404 Not Found` for missing data).
