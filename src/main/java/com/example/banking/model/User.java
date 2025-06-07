@@ -2,6 +2,12 @@ package com.example.banking.model;
 
 import jakarta.persistence.*;
 
+import com.example.banking.model.UserRole;
+
+/**
+ * Represents a system user with credentials and role.
+ */
+
 @Entity
 @Table(name = "users")
 public class User {
@@ -26,6 +32,10 @@ public class User {
 
     @Column(nullable = false)
     private String pin;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private UserRole role = UserRole.CUSTOMER;
 
     public Long getId() {
         return id;
@@ -77,5 +87,13 @@ public class User {
 
     public void setPin(String pin) {
         this.pin = pin;
+    }
+
+    public UserRole getRole() {
+        return role;
+    }
+
+    public void setRole(UserRole role) {
+        this.role = role;
     }
 }

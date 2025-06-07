@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.banking.dto.RegistrationRequest;
 import com.example.banking.model.User;
+import com.example.banking.model.UserRole;
 import com.example.banking.repository.UserRepository;
 
 @Service
@@ -30,6 +31,7 @@ public class UserService {
         user.setThaiName(request.thaiName());
         user.setEnglishName(request.englishName());
         user.setPin(passwordEncoder.encode(request.pin()));
+        user.setRole(UserRole.CUSTOMER);
         return userRepository.save(user);
     }
 }
