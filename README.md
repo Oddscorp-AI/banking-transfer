@@ -19,3 +19,12 @@ mvn test
 ```bash
 mvn spring-boot:run
 ```
+
+## API documentation
+
+After running the application, Swagger UI is available at:
+
+```
+http://localhost:8080/swagger-ui.html
+```
+
