@@ -1,0 +1,3 @@
+ALTER TABLE transactions
+PARTITION BY HASH (MONTH(`timestamp`))
+PARTITIONS 12;
