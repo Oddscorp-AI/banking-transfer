@@ -1,8 +1,10 @@
 package com.example.banking.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -34,9 +36,16 @@ public class AccountController {
 
     @PostMapping("/{accountNumber}/deposit")
     @Operation(summary = "Deposit money")
-    public ResponseEntity<Account> deposit(@PathVariable String accountNumber,
+    public ResponseEntity<Account> deposit(@PathVariable("accountNumber") String accountNumber,
                                            @RequestBody DepositRequest request) {
         Account account = accountService.deposit(accountNumber, request.amount());
+        return ResponseEntity.ok(account);
+    }
+
+    @GetMapping("/{accountNumber}")
+    @Operation(summary = "Get account information")
+    public ResponseEntity<Account> getAccount(@PathVariable("accountNumber") String accountNumber, Authentication auth) {
+        Account account = accountService.getAccountForUser(accountNumber, auth.getName());
         return ResponseEntity.ok(account);
     }
 }

@@ -5,13 +5,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.example.banking.controller.AccountController;
 import com.example.banking.dto.AccountRequest;
-import com.example.banking.dto.DepositRequest;
 import com.example.banking.model.Account;
 import com.example.banking.service.AccountService;
 
@@ -25,6 +28,12 @@ class AccountControllerTest {
 
     @MockBean
     private AccountService accountService;
+
+    @MockBean
+    private UserDetailsService userDetailsService;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Test
     void createAccount() throws Exception {
@@ -55,5 +64,24 @@ class AccountControllerTest {
                 .content(json))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.balance").value(150.0));
+    }
+
+    @Test
+    void viewOwnAccount() throws Exception {
+        Account account = new Account();
+        account.setAccountNumber("1234567");
+        account.setCitizenId("987654321");
+        account.setBalance(new java.math.BigDecimal("100"));
+        when(accountService.getAccount("1234567")).thenReturn(account);
+        when(userDetailsService.loadUserByUsername("test@example.com"))
+            .thenReturn(User.withUsername("test@example.com")
+                    .password(passwordEncoder.encode("secret"))
+                    .roles("CUSTOMER")
+                    .build());
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/accounts/1234567")
+                .with(SecurityMockMvcRequestPostProcessors.httpBasic("test@example.com", "secret")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accountNumber").value("1234567"));
     }
 }

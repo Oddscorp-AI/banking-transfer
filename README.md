@@ -64,6 +64,13 @@ Tellers can deposit money into an existing account by sending a POST request to
 
 The amount must be at least 1 THB.
 
+## Viewing account information
+
+Registered customers can view their own account details. Send a GET request to
+`/api/accounts/{accountNumber}` using HTTP Basic authentication with the email
+and password from registration. The endpoint returns the account data only if
+the logged-in user owns the account.
+
 ## API documentation
 
 After running the application, Swagger UI is available at:
