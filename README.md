@@ -1,6 +1,6 @@
 # Banking Transfer
 
-This project provides a minimal Spring Boot service demonstrating online registration for a banking application.
+This project provides a minimal Spring Boot service demonstrating online registration for a banking application. It now includes an endpoint for tellers to create new saving accounts.
 
 ## Database
 
@@ -35,6 +35,21 @@ docker compose up --build
 This command starts both a MySQL container and the Spring Boot application. The
 application waits for MySQL to accept connections before starting so the
 service initializes reliably.
+
+## Creating accounts
+
+Tellers can create new accounts by sending a POST request to `/api/accounts` with JSON like:
+
+```json
+{
+  "citizenId": "1234567890123",
+  "thaiName": "Thai Name",
+  "englishName": "English Name",
+  "initialDeposit": 100.0
+}
+```
+
+The response includes a generated `accountNumber` consisting of seven digits.
 
 ## API documentation
 
