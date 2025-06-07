@@ -5,7 +5,7 @@ CREATE TABLE users (
     citizen_id VARCHAR(255) NOT NULL UNIQUE,
     thai_name VARCHAR(255) NOT NULL,
     english_name VARCHAR(255) NOT NULL,
-    pin VARCHAR(255) NOT NULL,
+    pin_hash VARCHAR(255) NOT NULL,
     role VARCHAR(50) NOT NULL
 );
 

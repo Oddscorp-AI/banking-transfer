@@ -58,10 +58,37 @@ service initializes reliably.
 
 ## Security
 
-Endpoints enforce role-based access using Spring Security annotations. Customers
-may only access their own accounts. For example, the controller methods are
-annotated with `@PreAuthorize` checks that call a helper bean to verify the
-requested account belongs to the authenticated user.
+Authentication uses JSON Web Tokens (JWT) signed with an RSA key pair
+(RS256). Clients first obtain a token by calling:
+
+```
+POST /auth/login          # customers
+POST /auth/teller/login   # tellers
+```
+
+Both endpoints accept a JSON body with `email` and `password`. The response
+contains a `token` field which should be sent in the `Authorization: Bearer`
+header for subsequent requests.
+
+Endpoints still enforce role-based access via Spring Security annotations and a
+helper bean ensuring customers only access their own accounts.
+
+Each registered user also has a six-digit **PIN**. The PIN is hashed with
+BCrypt and stored in the `pin_hash` column, separate from the login password.
+It must be supplied when performing money transfers or requesting bank
+statements so these operations use step-up authentication.
+
+### OWASP Top 10 controls
+
+To address common vulnerabilities the application adds several protections:
+
+- A `SecurityHeadersFilter` sets `Content-Security-Policy`, `X-Content-Type-Options`,
+  `X-Frame-Options`, and `X-XSS-Protection` headers on every response.
+- JWT tokens are sent in the `Authorization` header so no cookies are used. If
+  cookies are added later they must be marked `HttpOnly`.
+- Request DTOs use Bean Validation to sanitize and validate input.
+- A simple `RateLimitFilter` returns HTTP `429` when a client exceeds 100
+  requests per minute.
 
 ## Design considerations
 
@@ -124,6 +151,11 @@ destination account number, amount (at least 1 THB), and your six-digit PIN:
 
 The response returns the updated source account balance.
 
+Transfers are limited per account each day. The current limit is stored in the
+`settings` table (`DAILY_TRANSFER_LIMIT`) so it can be adjusted without code
+changes. Any attempt to exceed the configured limit results in a `400 Bad
+Request` error.
+
 Both deposit and transfer operations lock the account records to avoid duplicate
 transaction postings when requests occur concurrently. These methods run with
 **SERIALIZABLE** isolation using `SELECT ... FOR UPDATE` and an optimistic
@@ -172,3 +204,12 @@ When a request fails validation or a resource cannot be found the service return
 ```
 
 The HTTP status code matches the problem (e.g. `400 Bad Request` for invalid input or `404 Not Found` for missing data).
+
+## Metrics and observability
+
+The application exposes Prometheus metrics via Spring Boot Actuator. When running
+the service you can scrape metrics from `http://localhost:8080/actuator/prometheus`.
+
+Each HTTP request is tagged with a `requestUid` which is written to the MDC so
+log entries can be correlated with a particular request. The generated request
+identifier is also returned in the `X-Request-Id` response header.

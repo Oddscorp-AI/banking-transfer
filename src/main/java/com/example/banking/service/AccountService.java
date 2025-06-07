@@ -2,6 +2,7 @@ package com.example.banking.service;
 
 import java.math.BigDecimal;
 import java.security.SecureRandom;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.List;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.annotation.Isolation;
 
+import com.example.banking.ErrorMessages;
 import com.example.banking.dto.AccountRequest;
 import com.example.banking.dto.StatementEntry;
 import com.example.banking.mapper.AccountMapper;
@@ -22,6 +24,8 @@ import com.example.banking.model.TransactionType;
 import com.example.banking.repository.AccountRepository;
 import com.example.banking.repository.TransactionRepository;
 import com.example.banking.repository.UserRepository;
+import com.example.banking.repository.SettingRepository;
+import com.example.banking.model.Setting;
 
 @Service
 public class AccountService {
@@ -31,6 +35,7 @@ public class AccountService {
     private final PasswordEncoder passwordEncoder;
     private final AccountMapper accountMapper;
     private final TransactionMapper transactionMapper;
+    private final SettingRepository settingRepository;
     private static final int ACCOUNT_NUMBER_LENGTH = 7;
     private final SecureRandom random = new SecureRandom();
 
@@ -39,13 +44,24 @@ public class AccountService {
                          TransactionRepository transactionRepository,
                          PasswordEncoder passwordEncoder,
                          AccountMapper accountMapper,
-                         TransactionMapper transactionMapper) {
+                         TransactionMapper transactionMapper,
+                         SettingRepository settingRepository) {
         this.accountRepository = accountRepository;
         this.userRepository = userRepository;
         this.transactionRepository = transactionRepository;
         this.passwordEncoder = passwordEncoder;
         this.accountMapper = accountMapper;
         this.transactionMapper = transactionMapper;
+        this.settingRepository = settingRepository;
+    }
+
+    private com.example.banking.model.User loadUserAndVerifyPin(String email, String pin) {
+        com.example.banking.model.User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.USER_NOT_FOUND));
+        if (!passwordEncoder.matches(pin, user.getPinHash())) {
+            throw new IllegalArgumentException(ErrorMessages.INVALID_PIN);
+        }
+        return user;
     }
 
     @Transactional
@@ -61,7 +77,7 @@ public class AccountService {
             throw new IllegalArgumentException("Deposit must be at least 1 THB");
         }
         Account account = accountRepository.findByAccountNumberForUpdate(accountNumber)
-                .orElseThrow(() -> new IllegalArgumentException("Account not found"));
+                .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.ACCOUNT_NOT_FOUND));
         account.setBalance(account.getBalance().add(amount));
         accountRepository.save(account);
 
@@ -81,17 +97,17 @@ public class AccountService {
     @Transactional(readOnly = true)
     public Account getAccount(String accountNumber) {
         return accountRepository.findByAccountNumber(accountNumber)
-                .orElseThrow(() -> new IllegalArgumentException("Account not found"));
+                .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.ACCOUNT_NOT_FOUND));
     }
 
     @Transactional(readOnly = true)
     public Account getAccountForUser(String accountNumber, String email) {
         Account account = getAccount(accountNumber);
         String citizenId = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"))
+                .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.USER_NOT_FOUND))
                 .getCitizenId();
         if (!citizenId.equals(account.getCitizenId())) {
-            throw new IllegalArgumentException("Access denied");
+            throw new IllegalArgumentException(ErrorMessages.ACCESS_DENIED);
         }
         return account;
     }
@@ -104,21 +120,30 @@ public class AccountService {
         }
 
         Account from = accountRepository.findByAccountNumberForUpdate(fromAccountNumber)
-                .orElseThrow(() -> new IllegalArgumentException("Account not found"));
+                .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.ACCOUNT_NOT_FOUND));
         Account to = accountRepository.findByAccountNumberForUpdate(toAccountNumber)
-                .orElseThrow(() -> new IllegalArgumentException("Account not found"));
+                .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.ACCOUNT_NOT_FOUND));
 
-        com.example.banking.model.User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        com.example.banking.model.User user = loadUserAndVerifyPin(email, pin);
 
         if (!from.getCitizenId().equals(user.getCitizenId())) {
-            throw new IllegalArgumentException("Access denied");
-        }
-        if (!passwordEncoder.matches(pin, user.getPin())) {
-            throw new IllegalArgumentException("Invalid PIN");
+            throw new IllegalArgumentException(ErrorMessages.ACCESS_DENIED);
         }
         if (from.getBalance().compareTo(amount) < 0) {
             throw new IllegalArgumentException("Insufficient balance");
+        }
+
+        LocalDate today = LocalDate.now();
+        LocalDateTime startOfDay = today.atStartOfDay();
+        LocalDateTime endOfDay = today.plusDays(1).atStartOfDay();
+        BigDecimal totalToday = transactionRepository
+                .sumAmountByAccountAndTypeAndTimestampBetween(from, TransactionType.TRANSFER_OUT,
+                        startOfDay, endOfDay);
+        BigDecimal dailyLimit = settingRepository.findById("DAILY_TRANSFER_LIMIT")
+                .map(Setting::getValue)
+                .orElse(new BigDecimal("50000"));
+        if (totalToday.add(amount).compareTo(dailyLimit) > 0) {
+            throw new IllegalArgumentException(ErrorMessages.DAILY_LIMIT_EXCEEDED);
         }
 
         from.setBalance(from.getBalance().subtract(amount));
@@ -154,11 +179,7 @@ public class AccountService {
     @Transactional(readOnly = true)
     public List<StatementEntry> getStatement(String accountNumber, String email, String pin, YearMonth month) {
         Account account = getAccountForUser(accountNumber, email);
-        com.example.banking.model.User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        if (!passwordEncoder.matches(pin, user.getPin())) {
-            throw new IllegalArgumentException("Invalid PIN");
-        }
+        loadUserAndVerifyPin(email, pin);
         LocalDateTime start = month.atDay(1).atStartOfDay();
         LocalDateTime end = month.plusMonths(1).atDay(1).atStartOfDay();
         List<Transaction> txs = transactionRepository

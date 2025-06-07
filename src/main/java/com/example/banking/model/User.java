@@ -37,8 +37,8 @@ public class User {
     @Column(nullable = false)
     private String englishName;
 
-    @Column(nullable = false)
-    private String pin;
+    @Column(name = "pin_hash", nullable = false)
+    private String pinHash;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -88,12 +88,12 @@ public class User {
         this.englishName = englishName;
     }
 
-    public String getPin() {
-        return pin;
+    public String getPinHash() {
+        return pinHash;
     }
 
-    public void setPin(String pin) {
-        this.pin = pin;
+    public void setPinHash(String pinHash) {
+        this.pinHash = pinHash;
     }
 
     public UserRole getRole() {

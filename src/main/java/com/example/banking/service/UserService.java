@@ -30,7 +30,7 @@ public class UserService {
         user.setCitizenId(request.citizenId());
         user.setThaiName(request.thaiName());
         user.setEnglishName(request.englishName());
-        user.setPin(passwordEncoder.encode(request.pin()));
+        user.setPinHash(passwordEncoder.encode(request.pin()));
         user.setRole(UserRole.CUSTOMER);
         return userRepository.save(user);
     }

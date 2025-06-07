@@ -5,12 +5,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.example.banking.controller.AccountController;
@@ -20,6 +16,7 @@ import com.example.banking.model.Account;
 import com.example.banking.dto.StatementEntry;
 import com.example.banking.service.AccountService;
 import com.example.banking.config.AccountSecurity;
+import com.example.banking.security.JwtService;
 
 import static org.mockito.Mockito.*;
 
@@ -32,14 +29,13 @@ class AccountControllerTest {
     @MockBean
     private AccountService accountService;
 
-    @MockBean
-    private UserDetailsService userDetailsService;
 
     @MockBean
     private AccountSecurity accountSecurity;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    @MockBean
+    private JwtService jwtService;
+
 
     @Test
     void createAccount() throws Exception {
@@ -48,14 +44,12 @@ class AccountControllerTest {
         Account account = new Account();
         account.setAccountNumber("1234567");
         when(accountService.createAccount(any(AccountRequest.class))).thenReturn(account);
-        when(userDetailsService.loadUserByUsername("teller@example.com"))
-            .thenReturn(User.withUsername("teller@example.com")
-                    .password(passwordEncoder.encode("secret"))
-                    .roles("TELLER")
-                    .build());
+        io.jsonwebtoken.Claims claims = io.jsonwebtoken.Jwts.claims().setSubject("teller@example.com");
+        claims.put("role", "TELLER");
+        when(jwtService.parse("token")).thenReturn(claims);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/accounts")
-                .with(SecurityMockMvcRequestPostProcessors.httpBasic("teller@example.com", "secret"))
+                .header("Authorization", "Bearer token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
                 .andExpect(status().isOk())
@@ -66,14 +60,12 @@ class AccountControllerTest {
     void customerCannotCreateAccount() throws Exception {
         String json = "{\"citizenId\":\"987654321\",\"thaiName\":\"Thai\",\"englishName\":\"English\",\"initialDeposit\":100.0}";
 
-        when(userDetailsService.loadUserByUsername("customer@example.com"))
-            .thenReturn(User.withUsername("customer@example.com")
-                    .password(passwordEncoder.encode("secret"))
-                    .roles("CUSTOMER")
-                    .build());
+        io.jsonwebtoken.Claims claims = io.jsonwebtoken.Jwts.claims().setSubject("customer@example.com");
+        claims.put("role", "CUSTOMER");
+        when(jwtService.parse("token")).thenReturn(claims);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/accounts")
-                .with(SecurityMockMvcRequestPostProcessors.httpBasic("customer@example.com", "secret"))
+                .header("Authorization", "Bearer token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
                 .andExpect(status().isForbidden());
@@ -87,14 +79,12 @@ class AccountControllerTest {
         account.setAccountNumber("1234567");
         account.setBalance(new java.math.BigDecimal("150.0"));
         when(accountService.deposit(eq("1234567"), any())).thenReturn(account);
-        when(userDetailsService.loadUserByUsername("teller@example.com"))
-            .thenReturn(User.withUsername("teller@example.com")
-                    .password(passwordEncoder.encode("secret"))
-                    .roles("TELLER")
-                    .build());
+        io.jsonwebtoken.Claims claims = io.jsonwebtoken.Jwts.claims().setSubject("teller@example.com");
+        claims.put("role", "TELLER");
+        when(jwtService.parse("token")).thenReturn(claims);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/accounts/1234567/deposit")
-                .with(SecurityMockMvcRequestPostProcessors.httpBasic("teller@example.com", "secret"))
+                .header("Authorization", "Bearer token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
                 .andExpect(status().isOk())
@@ -105,14 +95,12 @@ class AccountControllerTest {
     void customerCannotDeposit() throws Exception {
         String json = "{\"amount\":50.0}";
 
-        when(userDetailsService.loadUserByUsername("customer@example.com"))
-            .thenReturn(User.withUsername("customer@example.com")
-                    .password(passwordEncoder.encode("secret"))
-                    .roles("CUSTOMER")
-                    .build());
+        io.jsonwebtoken.Claims claims = io.jsonwebtoken.Jwts.claims().setSubject("customer@example.com");
+        claims.put("role", "CUSTOMER");
+        when(jwtService.parse("token")).thenReturn(claims);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/accounts/1234567/deposit")
-                .with(SecurityMockMvcRequestPostProcessors.httpBasic("customer@example.com", "secret"))
+                .header("Authorization", "Bearer token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
                 .andExpect(status().isForbidden());
@@ -127,28 +115,24 @@ class AccountControllerTest {
         when(accountService.getAccountForUser("1234567", "test@example.com"))
             .thenReturn(account);
         when(accountSecurity.isOwner("1234567", "test@example.com")).thenReturn(true);
-        when(userDetailsService.loadUserByUsername("test@example.com"))
-            .thenReturn(User.withUsername("test@example.com")
-                    .password(passwordEncoder.encode("secret"))
-                    .roles("CUSTOMER")
-                    .build());
+        io.jsonwebtoken.Claims claims = io.jsonwebtoken.Jwts.claims().setSubject("test@example.com");
+        claims.put("role", "CUSTOMER");
+        when(jwtService.parse("token")).thenReturn(claims);
 
         mockMvc.perform(MockMvcRequestBuilders.get("/api/accounts/1234567")
-                .with(SecurityMockMvcRequestPostProcessors.httpBasic("test@example.com", "secret")))
+                .header("Authorization", "Bearer token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accountNumber").value("1234567"));
     }
 
     @Test
     void tellerCannotViewAccount() throws Exception {
-        when(userDetailsService.loadUserByUsername("teller@example.com"))
-            .thenReturn(User.withUsername("teller@example.com")
-                    .password(passwordEncoder.encode("secret"))
-                    .roles("TELLER")
-                    .build());
+        io.jsonwebtoken.Claims claims = io.jsonwebtoken.Jwts.claims().setSubject("teller@example.com");
+        claims.put("role", "TELLER");
+        when(jwtService.parse("token")).thenReturn(claims);
 
         mockMvc.perform(MockMvcRequestBuilders.get("/api/accounts/1234567")
-                .with(SecurityMockMvcRequestPostProcessors.httpBasic("teller@example.com", "secret")))
+                .header("Authorization", "Bearer token"))
                 .andExpect(status().isForbidden());
     }
 
@@ -161,14 +145,12 @@ class AccountControllerTest {
         when(accountService.transfer(eq("1234567"), eq("7654321"), any(), eq("test@example.com"), eq("123456")))
             .thenReturn(account);
         when(accountSecurity.isOwner("1234567", "test@example.com")).thenReturn(true);
-        when(userDetailsService.loadUserByUsername("test@example.com"))
-            .thenReturn(User.withUsername("test@example.com")
-                    .password(passwordEncoder.encode("secret"))
-                    .roles("CUSTOMER")
-                    .build());
+        io.jsonwebtoken.Claims claims = io.jsonwebtoken.Jwts.claims().setSubject("test@example.com");
+        claims.put("role", "CUSTOMER");
+        when(jwtService.parse("token")).thenReturn(claims);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/accounts/1234567/transfer")
-                .with(SecurityMockMvcRequestPostProcessors.httpBasic("test@example.com", "secret"))
+                .header("Authorization", "Bearer token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
                 .andExpect(status().isOk())
@@ -179,14 +161,12 @@ class AccountControllerTest {
     void tellerCannotTransfer() throws Exception {
         String json = "{\"toAccount\":\"7654321\",\"amount\":50.0,\"pin\":\"123456\"}";
 
-        when(userDetailsService.loadUserByUsername("teller@example.com"))
-            .thenReturn(User.withUsername("teller@example.com")
-                    .password(passwordEncoder.encode("secret"))
-                    .roles("TELLER")
-                    .build());
+        io.jsonwebtoken.Claims claims2 = io.jsonwebtoken.Jwts.claims().setSubject("teller@example.com");
+        claims2.put("role", "TELLER");
+        when(jwtService.parse("token")).thenReturn(claims2);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/accounts/1234567/transfer")
-                .with(SecurityMockMvcRequestPostProcessors.httpBasic("teller@example.com", "secret"))
+                .header("Authorization", "Bearer token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
                 .andExpect(status().isForbidden());
@@ -202,14 +182,12 @@ class AccountControllerTest {
         when(accountService.getStatement(eq("1234567"), eq("test@example.com"), eq("123456"), any()))
             .thenReturn(list);
         when(accountSecurity.isOwner("1234567", "test@example.com")).thenReturn(true);
-        when(userDetailsService.loadUserByUsername("test@example.com"))
-            .thenReturn(User.withUsername("test@example.com")
-                    .password(passwordEncoder.encode("secret"))
-                    .roles("CUSTOMER")
-                    .build());
+        io.jsonwebtoken.Claims claims = io.jsonwebtoken.Jwts.claims().setSubject("test@example.com");
+        claims.put("role", "CUSTOMER");
+        when(jwtService.parse("token")).thenReturn(claims);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/accounts/1234567/statement")
-                .with(SecurityMockMvcRequestPostProcessors.httpBasic("test@example.com", "secret"))
+                .header("Authorization", "Bearer token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
                 .andExpect(status().isOk())
@@ -219,14 +197,12 @@ class AccountControllerTest {
     @Test
     void tellerCannotViewStatement() throws Exception {
         String json = "{\"month\":\"2025-05\",\"pin\":\"123456\"}";
-        when(userDetailsService.loadUserByUsername("teller@example.com"))
-            .thenReturn(User.withUsername("teller@example.com")
-                    .password(passwordEncoder.encode("secret"))
-                    .roles("TELLER")
-                    .build());
+        io.jsonwebtoken.Claims claims2 = io.jsonwebtoken.Jwts.claims().setSubject("teller@example.com");
+        claims2.put("role", "TELLER");
+        when(jwtService.parse("token")).thenReturn(claims2);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/accounts/1234567/statement")
-                .with(SecurityMockMvcRequestPostProcessors.httpBasic("teller@example.com", "secret"))
+                .header("Authorization", "Bearer token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
                 .andExpect(status().isForbidden());

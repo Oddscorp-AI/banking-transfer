@@ -25,11 +25,14 @@ import com.example.banking.model.User;
 import com.example.banking.repository.AccountRepository;
 import com.example.banking.repository.TransactionRepository;
 import com.example.banking.repository.UserRepository;
+import com.example.banking.repository.SettingRepository;
+import com.example.banking.model.Setting;
 
 class AccountServiceTest {
     private AccountRepository accountRepository;
     private UserRepository userRepository;
     private TransactionRepository transactionRepository;
+    private SettingRepository settingRepository;
     private PasswordEncoder passwordEncoder;
     private AccountService service;
 
@@ -38,10 +41,21 @@ class AccountServiceTest {
         accountRepository = mock(AccountRepository.class);
         userRepository = mock(UserRepository.class);
         transactionRepository = mock(TransactionRepository.class);
+        settingRepository = mock(SettingRepository.class);
         passwordEncoder = mock(PasswordEncoder.class);
         when(passwordEncoder.matches(any(), any())).thenReturn(true);
+        when(transactionRepository.sumAmountByAccountAndTypeAndTimestampBetween(any(), any(), any(), any()))
+                .thenReturn(BigDecimal.ZERO);
+        when(settingRepository.findById("DAILY_TRANSFER_LIMIT")).thenReturn(Optional.of(limit(50000)));
         service = new AccountService(accountRepository, userRepository, transactionRepository,
-                passwordEncoder, new AccountMapperImpl(), new TransactionMapperImpl());
+                passwordEncoder, new AccountMapperImpl(), new TransactionMapperImpl(), settingRepository);
+    }
+
+    private Setting limit(double amount) {
+        Setting s = new Setting();
+        s.setName("DAILY_TRANSFER_LIMIT");
+        s.setValue(BigDecimal.valueOf(amount));
+        return s;
     }
 
     @Test
@@ -81,7 +95,7 @@ class AccountServiceTest {
         when(accountRepository.findByAccountNumber("123")).thenReturn(Optional.of(acc));
         User user = new User();
         user.setCitizenId("111");
-        user.setPin("pin");
+        user.setPinHash("pin");
         when(userRepository.findByEmail("a@b.com")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("123456", "pin")).thenReturn(true);
         when(transactionRepository.findByAccountAndTimestampBetweenOrderByTimestampAsc(any(), any(), any()))
@@ -106,7 +120,7 @@ class AccountServiceTest {
         usr.setCitizenId("111");
         usr.setThaiName("t");
         usr.setEnglishName("e");
-        usr.setPin("pin");
+        usr.setPinHash("pin");
         when(userRepository.findByEmail("user@ex.com"))
                 .thenReturn(Optional.of(usr));
         when(accountRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -130,12 +144,33 @@ class AccountServiceTest {
                 .thenReturn(Optional.of(to));
         User user = new User();
         user.setCitizenId("111");
-        user.setPin("pin");
+        user.setPinHash("pin");
         when(userRepository.findByEmail("user@ex.com")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("bad", "pin")).thenReturn(false);
 
         assertThrows(IllegalArgumentException.class,
                 () -> service.transfer("A1", "A2", new BigDecimal("10"), "user@ex.com", "bad"));
+    }
+
+    @Test
+    void transferOverDailyLimitThrows() {
+        Account from = new Account();
+        from.setCitizenId("111");
+        from.setBalance(new BigDecimal("1000"));
+        Account to = new Account();
+        when(accountRepository.findByAccountNumberForUpdate(any()))
+                .thenReturn(Optional.of(from))
+                .thenReturn(Optional.of(to));
+        User user = new User();
+        user.setCitizenId("111");
+        user.setPinHash("pin");
+        when(userRepository.findByEmail("user@ex.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("123456", "pin")).thenReturn(true);
+        when(transactionRepository.sumAmountByAccountAndTypeAndTimestampBetween(any(), any(), any(), any()))
+                .thenReturn(new BigDecimal("49999"));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> service.transfer("A1", "A2", new BigDecimal("100"), "user@ex.com", "123456"));
     }
 
     @Test
