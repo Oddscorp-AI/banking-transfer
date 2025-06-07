@@ -28,7 +28,7 @@ public class AccountService {
         account.setThaiName(request.thaiName());
         account.setEnglishName(request.englishName());
         if (request.initialDeposit() != null) {
-            account.setBalance(BigDecimal.valueOf(request.initialDeposit()));
+            account.setBalance(request.initialDeposit());
         }
         return accountRepository.save(account);
     }
