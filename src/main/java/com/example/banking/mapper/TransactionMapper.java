@@ -20,7 +20,7 @@ public interface TransactionMapper {
     @Mapping(target = "time", expression = "java(tx.getTimestamp().toLocalTime().format(TIME_FMT))")
     @Mapping(target = "code", expression = "java(mapCode(tx.getType()))")
     @Mapping(target = "channel", expression = "java(mapChannel(tx.getChannel()))")
-    @Mapping(target = "debitCredit", expression = "java(tx.getType() == TransactionType.TRANSFER_OUT ? tx.getAmount().negate() : tx.getAmount())")
+    @Mapping(target = "debitCredit", expression = "java(tx.getType() == com.example.banking.model.TransactionType.TRANSFER_OUT ? tx.getAmount().negate() : tx.getAmount())")
     StatementEntry toDto(Transaction tx);
 
     default String mapCode(TransactionType type) {
