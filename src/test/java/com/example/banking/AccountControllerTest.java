@@ -102,6 +102,23 @@ class AccountControllerTest {
     }
 
     @Test
+    void customerCannotDeposit() throws Exception {
+        String json = "{\"amount\":50.0}";
+
+        when(userDetailsService.loadUserByUsername("customer@example.com"))
+            .thenReturn(User.withUsername("customer@example.com")
+                    .password(passwordEncoder.encode("secret"))
+                    .roles("CUSTOMER")
+                    .build());
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/accounts/1234567/deposit")
+                .with(SecurityMockMvcRequestPostProcessors.httpBasic("customer@example.com", "secret"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void viewOwnAccount() throws Exception {
         Account account = new Account();
         account.setAccountNumber("1234567");

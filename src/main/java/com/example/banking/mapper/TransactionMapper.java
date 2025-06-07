@@ -28,6 +28,7 @@ public interface TransactionMapper {
             case DEPOSIT -> "A0";
             case TRANSFER_OUT -> "A1";
             case TRANSFER_IN -> "A3";
+            default -> throw new IllegalStateException("Unexpected value: " + type);
         };
     }
 
@@ -35,6 +36,7 @@ public interface TransactionMapper {
         return switch (channel) {
             case TELLER -> "OTC";
             case ONLINE -> "ATS";
+            default -> throw new IllegalStateException("Unexpected value: " + channel);
         };
     }
 }

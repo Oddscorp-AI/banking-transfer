@@ -22,6 +22,10 @@ mvn clean package
 mvn test
 ```
 
+The build generates a JaCoCo coverage report under
+`target/site/jacoco/index.html` so code coverage can be inspected after tests
+run.
+
 ## Testing strategy
 
 Unit tests rely on **JUnit&nbsp;5** together with **Mockito** to verify service
