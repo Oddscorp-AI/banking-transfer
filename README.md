@@ -24,6 +24,16 @@ mvn test
 mvn spring-boot:run
 ```
 
+## Docker
+
+To build and run the service with MySQL locally using Docker Compose:
+
+```bash
+docker compose up --build
+```
+
+This command starts both a MySQL container and the Spring Boot application.
+
 ## API documentation
 
 After running the application, Swagger UI is available at:
