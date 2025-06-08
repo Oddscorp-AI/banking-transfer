@@ -21,6 +21,7 @@ import com.example.banking.security.JwtService;
 import static org.mockito.Mockito.*;
 
 @WebMvcTest(AccountController.class)
+@Import(com.example.banking.config.SecurityConfig.class)
 class AccountControllerTest {
 
     @Autowired
@@ -35,6 +36,9 @@ class AccountControllerTest {
 
     @MockBean
     private JwtService jwtService;
+
+    @MockBean
+    private com.example.banking.repository.UserRepository userRepository;
 
 
     @Test
