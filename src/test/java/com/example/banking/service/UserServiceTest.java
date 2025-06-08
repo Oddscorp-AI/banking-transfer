@@ -1,18 +1,15 @@
 package com.example.banking.service;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
-import java.util.Optional;
-
+import com.example.banking.dto.RegistrationRequest;
+import com.example.banking.model.User;
+import com.example.banking.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import com.example.banking.dto.RegistrationRequest;
-import com.example.banking.model.User;
-import com.example.banking.model.UserRole;
-import com.example.banking.repository.UserRepository;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.*;
 
 class UserServiceTest {
     private UserRepository userRepository;

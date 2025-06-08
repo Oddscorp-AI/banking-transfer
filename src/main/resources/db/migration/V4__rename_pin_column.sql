@@ -1,1 +1,0 @@
-ALTER TABLE users CHANGE pin pin_hash VARCHAR(255) NOT NULL;

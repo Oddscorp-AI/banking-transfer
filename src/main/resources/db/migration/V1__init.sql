@@ -20,13 +20,16 @@ CREATE TABLE accounts (
 );
 
 CREATE TABLE transactions (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    account_id BIGINT NOT NULL,
-    timestamp DATETIME NOT NULL,
-    type VARCHAR(50) NOT NULL,
-    channel VARCHAR(50) NOT NULL,
-    amount DECIMAL(19,2) NOT NULL,
-    balance DECIMAL(19,2) NOT NULL,
-    remark VARCHAR(255),
-    CONSTRAINT fk_account FOREIGN KEY (account_id) REFERENCES accounts(id)
-);
+    id          BIGINT      NOT NULL AUTO_INCREMENT,
+    account_id  BIGINT      NOT NULL,
+    `timestamp` DATETIME    NOT NULL,
+    type        VARCHAR(50) NOT NULL,
+    channel     VARCHAR(50) NOT NULL,
+    amount      DECIMAL(19,2) NOT NULL,
+    balance     DECIMAL(19,2) NOT NULL,
+    remark      VARCHAR(255),
+    PRIMARY KEY (id, `timestamp`)
+)
+ENGINE=InnoDB
+PARTITION BY HASH( MONTH(`timestamp`) )
+PARTITIONS 12;

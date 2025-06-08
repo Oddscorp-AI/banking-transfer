@@ -1,32 +1,26 @@
 package com.example.banking.service;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import com.example.banking.dto.AccountRequest;
+import com.example.banking.dto.StatementEntry;
+import com.example.banking.mapper.AccountMapperImpl;
+import com.example.banking.mapper.TransactionMapperImpl;
+import com.example.banking.model.*;
+import com.example.banking.repository.AccountRepository;
+import com.example.banking.repository.SettingRepository;
+import com.example.banking.repository.TransactionRepository;
+import com.example.banking.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.math.BigDecimal;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.Optional;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.springframework.security.crypto.password.PasswordEncoder;
-
-import com.example.banking.dto.AccountRequest;
-import com.example.banking.dto.StatementEntry;
-import com.example.banking.mapper.AccountMapperImpl;
-import com.example.banking.mapper.TransactionMapperImpl;
-import com.example.banking.model.Account;
-import com.example.banking.model.Transaction;
-import com.example.banking.model.TransactionChannel;
-import com.example.banking.model.TransactionType;
-import com.example.banking.model.User;
-import com.example.banking.repository.AccountRepository;
-import com.example.banking.repository.TransactionRepository;
-import com.example.banking.repository.UserRepository;
-import com.example.banking.repository.SettingRepository;
-import com.example.banking.model.Setting;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 class AccountServiceTest {
     private AccountRepository accountRepository;

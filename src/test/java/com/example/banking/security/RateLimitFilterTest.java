@@ -12,15 +12,22 @@ class RateLimitFilterTest {
     @Test
     void blocksWhenLimitExceeded() throws Exception {
         RateLimitFilter filter = new RateLimitFilter();
-        MockFilterChain chain = new MockFilterChain();
         MockHttpServletRequest req = new MockHttpServletRequest();
-        MockHttpServletResponse res = new MockHttpServletResponse();
-        // exceed limit of 100 quickly
+
+        // First 100 requests should pass
         for (int i = 0; i < 100; i++) {
+            MockHttpServletResponse res = new MockHttpServletResponse();
+            MockFilterChain chain = new MockFilterChain();
             filter.doFilter(req, res, chain);
-            assertNotEquals(429, res.getStatus());
+            assertNotEquals(429, res.getStatus(),
+                    "Request #" + (i+1) + " should not be rate-limited");
         }
-        filter.doFilter(req, res, chain);
-        assertEquals(429, res.getStatus());
+
+        // 101st request should be blocked
+        MockHttpServletResponse res101 = new MockHttpServletResponse();
+        MockFilterChain chain101 = new MockFilterChain();
+        filter.doFilter(req, res101, chain101);
+        assertEquals(429, res101.getStatus(),
+                "101st request should be rate-limited");
     }
 }
