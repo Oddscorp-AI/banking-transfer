@@ -93,10 +93,9 @@ To address common vulnerabilities the application adds several protections:
 ## Design considerations
 
 The domain model uses enumerations for user roles and transaction metadata.
-This avoids fragile string comparisons and simplifies future extension with
-additional roles or transaction types. An index on `(account_id, timestamp)`
-improves statement queries as the transaction table grows.
-The transactions table is partitioned by month so statements remain fast even as records grow.
+This avoids fragile string comparisons and simplifies future extension with additional roles or transaction types.
+Transactions are indexed on `(account_id, timestamp)` for efficient statement queries.
+Table partitioning is disabled for compatibility with older MySQL versions.
 Mappings between DTOs and entities are implemented using **MapStruct** so the
 service code stays concise and type-safe.
 
